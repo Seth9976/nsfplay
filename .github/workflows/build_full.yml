@@ -23,7 +23,8 @@ jobs:
         uses: microsoft/setup-msbuild@v2  
   
       - name: Build nsfplay solution (Release Win32)  
-        run: msbuild nsfplay.sln -t:rebuild -property:Configuration=Release -property:Platform=Win32 -m  
+        run: msbuild nsfplay.sln -t:rebuild -property:Configuration=Release -property:Platform=Win32 -property:PlatformToolset=v145 -property:WindowsTargetPlatformVersion=10.0 -m
+ 
   
       - name: Setup MSYS2 for contrib tools  
         uses: msys2/setup-msys2@v2  
