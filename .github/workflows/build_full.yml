@@ -1,0 +1,46 @@
+name: Build NSFPlay for Windows  
+  
+on:  
+  push:  
+    branches: [ "master" ]  
+  pull_request:  
+    branches: [ "master" ]  
+  workflow_dispatch:  
+  
+concurrency:  
+  group: ${{ github.workflow }}-${{ github.ref }}  
+  cancel-in-progress: true  
+  
+jobs:  
+  build:  
+    name: Build nsfplay + nsf2wav + nsfmeta  
+    runs-on: windows-latest  
+    steps:  
+      - name: Checkout  
+        uses: actions/checkout@v4  
+  
+      - name: Setup MSVC  
+        uses: microsoft/setup-msbuild@v2  
+  
+      - name: Build nsfplay solution (Release Win32)  
+        run: msbuild nsfplay.sln -t:rebuild -property:Configuration=Release -property:Platform=Win32 -m  
+  
+      - name: Setup MSYS2 for contrib tools  
+        uses: msys2/setup-msys2@v2  
+        with:  
+          msystem: UCRT64  
+          install: make mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-libiconv  
+  
+      - name: Build nsf2wav and nsfmeta  
+        shell: msys2 {0}  
+        run: make -C contrib -j  
+  
+      - name: Collect artifacts  
+        shell: pwsh  
+        run: New-Item -ItemType Directory -Force artifact; Copy-Item Release/nsfplay.exe artifact/; Copy-Item contrib/nsf2wav.exe artifact/ -ErrorAction SilentlyContinue; Copy-Item contrib/nsfmeta.exe artifact/ -ErrorAction SilentlyContinue; Get-ChildItem -Recurse -Filter *.exe | Select-Object FullName  
+  
+      - name: Upload artifact  
+        uses: actions/upload-artifact@v4  
+        with:  
+          name: nsfplay-windows-${{ github.sha }}  
+          path: artifact/
